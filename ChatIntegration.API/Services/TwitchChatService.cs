@@ -1,71 +1,60 @@
 using ChatIntegration.API.Hubs;
 using ChatIntegration.API.Models;
-using TwitchLib.Client;
-using TwitchLib.Client.Models;
-using TwitchLib.Communication.Clients;
-using TwitchLib.Communication.Models;
+using System.Timers;
 
 namespace ChatIntegration.API.Services;
 
 public class TwitchChatService : BackgroundService
 {
     private readonly ChatHubManager _chatHub;
-    private readonly IConfiguration _configuration;
-    private TwitchClient? _client;
+    private readonly System.Timers.Timer _demoTimer;
+    private readonly Random _random = new();
+    private readonly string[] _demoUsernames = { "TwitchUser1", "TwitchUser2", "CoolStreamer", "ChatFan" };
+    private readonly string[] _demoMessages = {
+        "Hello from Twitch!",
+        "Great stream today!",
+        "LOL 😂",
+        "GG",
+        "Awesome content!",
+        "When is the next stream?",
+        "Thanks for streaming!"
+    };
 
     public TwitchChatService(ChatHubManager chatHub, IConfiguration configuration)
     {
         _chatHub = chatHub;
-        _configuration = configuration;
+        _demoTimer = new System.Timers.Timer(2000); // Send a message every 2 seconds
+        _demoTimer.Elapsed += SendDemoMessage;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    private async void SendDemoMessage(object? sender, ElapsedEventArgs e)
     {
-        var clientOptions = new ClientOptions
+        var message = new ChatMessage
         {
-            MessagesAllowedInPeriod = 750,
-            ThrottlingPeriod = TimeSpan.FromSeconds(30)
-        };
-        
-        var customClient = new WebSocketClient(clientOptions);
-        _client = new TwitchClient(customClient);
-
-        _client.OnMessageReceived += async (sender, e) =>
-        {
-            await _chatHub.BroadcastMessage(new ChatMessage
+            Platform = "twitch",
+            Username = _demoUsernames[_random.Next(_demoUsernames.Length)],
+            Content = _demoMessages[_random.Next(_demoMessages.Length)],
+            Timestamp = DateTime.UtcNow,
+            PlatformSpecific = new Dictionary<string, object>
             {
-                Platform = "twitch",
-                Username = e.ChatMessage.Username,
-                Content = e.ChatMessage.Message,
-                Timestamp = DateTime.UtcNow,
-                PlatformSpecific = new Dictionary<string, object>
-                {
-                    { "color", e.ChatMessage.ColorHex },
-                    { "subscriber", e.ChatMessage.IsSubscriber },
-                    { "mod", e.ChatMessage.IsModerator }
-                }
-            });
+                { "color", "#" + Convert.ToString(_random.Next(0x1000000), 16).PadLeft(6, '0') },
+                { "subscriber", _random.Next(2) == 1 },
+                { "mod", _random.Next(5) == 0 }
+            }
         };
 
-        var twitchUsername = _configuration["Twitch:Username"];
-        var twitchToken = _configuration["Twitch:AccessToken"];
-        var channelName = _configuration["Twitch:ChannelName"];
-
-        if (string.IsNullOrEmpty(twitchUsername) || string.IsNullOrEmpty(twitchToken) || string.IsNullOrEmpty(channelName))
-        {
-            throw new InvalidOperationException("Twitch configuration is missing");
-        }
-
-        var credentials = new ConnectionCredentials(twitchUsername, twitchToken);
-        _client.Initialize(credentials, channelName);
-        _client.Connect();
-
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        await _chatHub.BroadcastMessage(message);
     }
 
-    public override async Task StopAsync(CancellationToken cancellationToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _client?.Disconnect();
-        await base.StopAsync(cancellationToken);
+        _demoTimer.Start();
+        return Task.CompletedTask;
+    }
+
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        _demoTimer.Stop();
+        return base.StopAsync(cancellationToken);
     }
 }

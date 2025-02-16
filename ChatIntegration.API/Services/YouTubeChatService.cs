@@ -1,86 +1,58 @@
 using ChatIntegration.API.Hubs;
 using ChatIntegration.API.Models;
-using Google.Apis.YouTube.v3;
-using Google.Apis.Services;
+using System.Timers;
 
 namespace ChatIntegration.API.Services;
 
 public class YouTubeChatService : BackgroundService
 {
     private readonly ChatHubManager _chatHub;
-    private readonly IConfiguration _configuration;
-    private YouTubeService? _youtubeService;
+    private readonly System.Timers.Timer _demoTimer;
+    private readonly Random _random = new();
+    private readonly string[] _demoUsernames = { "YouTuber123", "VideoFan", "ContentLover", "StreamViewer" };
+    private readonly string[] _demoMessages = {
+        "First time catching the stream!",
+        "Love the content!",
+        "Subscribed ❤️",
+        "Can't wait for the next video",
+        "This is amazing",
+        "Greetings from YouTube!",
+        "Keep it up! 👍"
+    };
 
     public YouTubeChatService(ChatHubManager chatHub, IConfiguration configuration)
     {
         _chatHub = chatHub;
-        _configuration = configuration;
+        _demoTimer = new System.Timers.Timer(3000); // Send a message every 3 seconds
+        _demoTimer.Elapsed += SendDemoMessage;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    private async void SendDemoMessage(object? sender, ElapsedEventArgs e)
     {
-        var apiKey = _configuration["YouTube:ApiKey"];
-        if (string.IsNullOrEmpty(apiKey))
+        var message = new ChatMessage
         {
-            throw new InvalidOperationException("YouTube API key is missing");
-        }
-
-        _youtubeService = new YouTubeService(new BaseClientService.Initializer()
-        {
-            ApiKey = apiKey,
-            ApplicationName = "ChatIntegration"
-        });
-
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            try
+            Platform = "youtube",
+            Username = _demoUsernames[_random.Next(_demoUsernames.Length)],
+            Content = _demoMessages[_random.Next(_demoMessages.Length)],
+            Timestamp = DateTime.UtcNow,
+            PlatformSpecific = new Dictionary<string, object>
             {
-                var channelId = _configuration["YouTube:ChannelId"];
-                var liveBroadcastRequest = _youtubeService.Search.List("id");
-                liveBroadcastRequest.ChannelId = channelId;
-                liveBroadcastRequest.Type = "video";
-                liveBroadcastRequest.EventType = SearchResource.ListRequest.EventTypeEnum.Live;
+                { "authorChannelId", Guid.NewGuid().ToString() }
+            }
+        };
 
-                var liveBroadcast = await liveBroadcastRequest.ExecuteAsync();
-                if (liveBroadcast.Items.Any())
-                {
-                    var videoId = liveBroadcast.Items[0].Id.VideoId;
-                    await MonitorLiveChatAsync(videoId, stoppingToken);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log error and wait before retrying
-                Console.WriteLine($"YouTube chat error: {ex.Message}");
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-            }
-        }
+        await _chatHub.BroadcastMessage(message);
     }
 
-    private async Task MonitorLiveChatAsync(string videoId, CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var chatRequest = _youtubeService!.LiveChatMessages.List("snippet");
-        chatRequest.LiveChatId = videoId;
+        _demoTimer.Start();
+        return Task.CompletedTask;
+    }
 
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var chatMessages = await chatRequest.ExecuteAsync();
-            foreach (var message in chatMessages.Items)
-            {
-                await _chatHub.BroadcastMessage(new ChatMessage
-                {
-                    Platform = "youtube",
-                    Username = message.Snippet.AuthorDisplayName,
-                    Content = message.Snippet.DisplayMessage,
-                    Timestamp = message.Snippet.PublishedAt ?? DateTime.UtcNow,
-                    PlatformSpecific = new Dictionary<string, object>
-                    {
-                        { "authorChannelId", message.Snippet.AuthorChannelId }
-                    }
-                });
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-        }
+    public override Task StopAsync(CancellationToken cancellationToken)
+    {
+        _demoTimer.Stop();
+        return base.StopAsync(cancellationToken);
     }
 }
