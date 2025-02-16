@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { insertSubscriberSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -33,5 +34,23 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  return createServer(app);
+  const server = createServer(app);
+  const wss = new WebSocketServer({ server, path: '/ws' });
+
+  wss.on('connection', (ws: WebSocket) => {
+    ws.on('message', (data: string) => {
+      const message = JSON.parse(data);
+      // Broadcast the message to all connected clients
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            ...message,
+            id: Date.now(),
+          }));
+        }
+      });
+    });
+  });
+
+  return server;
 }

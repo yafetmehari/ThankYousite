@@ -19,11 +19,11 @@ export class MemStorage implements IStorage {
     this.currentEpisodeId = 1;
     this.currentSubscriberId = 1;
 
-    // Add some sample episodes
+    // Add some sample episodes with YouTube embeds
     this.createEpisode({
       title: "The Beginning of Thank You",
       description: "In our first episode, we discuss the origins of the show and what to expect.",
-      embedUrl: "https://open.spotify.com/embed/episode/sample1",
+      embedUrl: "https://www.youtube.com/embed/sample1",
       publishedAt: new Date(),
       thumbnailUrl: "https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea",
     });
@@ -41,7 +41,11 @@ export class MemStorage implements IStorage {
 
   async createEpisode(insertEpisode: InsertEpisode): Promise<Episode> {
     const id = this.currentEpisodeId++;
-    const episode: Episode = { ...insertEpisode, id };
+    const episode: Episode = {
+      ...insertEpisode,
+      id,
+      thumbnailUrl: insertEpisode.thumbnailUrl || null,
+    };
     this.episodes.set(id, episode);
     return episode;
   }

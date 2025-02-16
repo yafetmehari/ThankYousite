@@ -42,13 +42,14 @@ export function EpisodeList() {
               <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
                 {episode.description}
               </p>
-              <iframe
-                src={episode.embedUrl}
-                width="100%"
-                height="152"
-                frameBorder="0"
-                allow="encrypted-media"
-              />
+              <div className="aspect-video">
+                <iframe
+                  src={episode.embedUrl}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             </CardContent>
           </Card>
         ))}
