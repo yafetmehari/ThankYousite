@@ -7,8 +7,10 @@ import { Send } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import type { ChatMessage } from "@shared/schema";
 import * as signalR from "@microsoft/signalr";
+import { useToast } from "@/hooks/use-toast";
 
 export function StreamChat() {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -16,9 +18,12 @@ export function StreamChat() {
   const hubConnection = useRef<signalR.HubConnection>();
 
   useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    const host = window.location.host;
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5000/chathub")
+      .withUrl(`${protocol}//${host}/chathub`)
       .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Warning)
       .build();
 
     connection.on("ReceiveMessage", (message: ChatMessage) => {
@@ -26,24 +31,36 @@ export function StreamChat() {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     });
 
-    connection.start()
-      .then(() => {
+    async function startConnection() {
+      try {
+        await connection.start();
         setConnected(true);
         hubConnection.current = connection;
-      })
-      .catch((err) => console.error("SignalR Connection Error:", err));
+      } catch (err) {
+        console.error("SignalR Connection Error:", err);
+        toast({
+          title: "Connection Error",
+          description: "Could not connect to chat. Please refresh the page.",
+          variant: "destructive",
+        });
+        setTimeout(startConnection, 5000); // Try to reconnect after 5 seconds
+      }
+    }
+
+    startConnection();
 
     return () => {
-      connection.stop();
+      if (connection.state === signalR.HubConnectionState.Connected) {
+        connection.stop();
+      }
     };
-  }, []);
+  }, [toast]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !hubConnection.current) return;
 
     const chatMessage: ChatMessage = {
-      platform: "youtube",
       username: "You",
       content: message,
       timestamp: new Date(),
@@ -54,6 +71,11 @@ export function StreamChat() {
       setMessage("");
     } catch (err) {
       console.error("Error sending message:", err);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
