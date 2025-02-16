@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
 import { SiYoutube, SiTwitch, SiDiscord } from "react-icons/si";
 import type { ChatMessage } from "@shared/schema";
+import * as signalR from "@microsoft/signalr";
 
 const PlatformIcon = ({ platform }: { platform: ChatMessage["platform"] }) => {
   switch (platform) {
@@ -27,37 +28,34 @@ export function StreamChat() {
   const [message, setMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
-  const socketRef = useRef<WebSocket | null>(null);
+  const hubConnection = useRef<signalR.HubConnection>();
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("http://localhost:5000/chathub")  // Update this URL to your C# backend
+      .withAutomaticReconnect()
+      .build();
 
-    socket.onopen = () => {
-      setConnected(true);
-    };
-
-    socket.onmessage = (event) => {
-      const newMessage = JSON.parse(event.data) as ChatMessage;
-      setMessages((prev) => [...prev, newMessage]);
+    connection.on("ReceiveMessage", (message: ChatMessage) => {
+      setMessages((prev) => [...prev, message]);
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+    });
 
-    socket.onclose = () => {
-      setConnected(false);
-    };
-
-    socketRef.current = socket;
+    connection.start()
+      .then(() => {
+        setConnected(true);
+        hubConnection.current = connection;
+      })
+      .catch((err) => console.error("SignalR Connection Error:", err));
 
     return () => {
-      socket.close();
+      connection.stop();
     };
   }, []);
 
-  const sendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !socketRef.current) return;
+    if (!message.trim() || !hubConnection.current) return;
 
     const chatMessage: ChatMessage = {
       platform: "web",
@@ -66,8 +64,12 @@ export function StreamChat() {
       timestamp: new Date(),
     };
 
-    socketRef.current.send(JSON.stringify(chatMessage));
-    setMessage("");
+    try {
+      await hubConnection.current.invoke("SendMessage", chatMessage);
+      setMessage("");
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
   };
 
   return (
