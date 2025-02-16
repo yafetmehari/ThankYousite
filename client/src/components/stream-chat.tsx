@@ -20,20 +20,30 @@ export function StreamChat() {
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "https:" : "http:";
     const host = window.location.host;
+    console.log("Connecting to SignalR at:", `${protocol}//${host}/chathub`);
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${protocol}//${host}/chathub`)
       .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Warning)
+      .configureLogging(signalR.LogLevel.Debug)  // Enable debug logging
       .build();
 
+    connection.onclose((error) => {
+      console.log("SignalR connection closed:", error);
+      setConnected(false);
+    });
+
     connection.on("ReceiveMessage", (message: ChatMessage) => {
+      console.log("Received message:", message);
       setMessages((prev) => [...prev, message]);
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     });
 
     async function startConnection() {
       try {
+        console.log("Starting SignalR connection...");
         await connection.start();
+        console.log("SignalR connected successfully");
         setConnected(true);
         hubConnection.current = connection;
       } catch (err) {
@@ -43,7 +53,7 @@ export function StreamChat() {
           description: "Could not connect to chat. Please refresh the page.",
           variant: "destructive",
         });
-        setTimeout(startConnection, 5000); // Try to reconnect after 5 seconds
+        setTimeout(startConnection, 5000);
       }
     }
 
@@ -84,7 +94,7 @@ export function StreamChat() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <SiYoutube className="h-5 w-5 text-red-500" />
-          YouTube Chat
+          YouTube Chat {connected ? "(Connected)" : "(Connecting...)"}
         </CardTitle>
       </CardHeader>
       <CardContent>

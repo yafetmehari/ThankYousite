@@ -9,7 +9,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://localhost:5000")
+        builder.SetIsOriginAllowed(_ => true)  // Allow any origin
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials();
@@ -25,4 +25,4 @@ var app = builder.Build();
 app.UseCors();
 app.MapHub<ChatHub>("/chathub");
 
-app.Run();
+app.Run("http://0.0.0.0:5000");  // Listen on all interfaces
