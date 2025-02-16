@@ -17,13 +17,12 @@ export const subscribers = pgTable("subscribers", {
   subscribedAt: timestamp("subscribed_at").defaultNow(),
 });
 
-// Define the chat message schema
+// Define the chat message schema for YouTube only
 export const chatMessageSchema = z.object({
-  platform: z.enum(["youtube", "twitch", "kick", "discord", "web"]),
   username: z.string(),
   content: z.string(),
   timestamp: z.date(),
-  platformSpecific: z.record(z.any()).optional(),
+  authorChannelId: z.string().optional(),
 });
 
 export const insertEpisodeSchema = createInsertSchema(episodes).omit({ id: true });

@@ -16,11 +16,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add platform services
+// Add YouTube chat service
 builder.Services.AddSingleton<ChatHubManager>();
-builder.Services.AddHostedService<TwitchChatService>();
 builder.Services.AddHostedService<YouTubeChatService>();
-builder.Services.AddHostedService<DiscordChatService>();
 
 var app = builder.Build();
 

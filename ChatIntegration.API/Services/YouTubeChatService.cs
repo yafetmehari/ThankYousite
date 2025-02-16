@@ -23,7 +23,7 @@ public class YouTubeChatService : BackgroundService
     public YouTubeChatService(ChatHubManager chatHub, IConfiguration configuration)
     {
         _chatHub = chatHub;
-        _demoTimer = new System.Timers.Timer(3000); // Send a message every 3 seconds
+        _demoTimer = new System.Timers.Timer(2000); // Send a message every 2 seconds
         _demoTimer.Elapsed += SendDemoMessage;
     }
 
@@ -31,14 +31,10 @@ public class YouTubeChatService : BackgroundService
     {
         var message = new ChatMessage
         {
-            Platform = "youtube",
             Username = _demoUsernames[_random.Next(_demoUsernames.Length)],
             Content = _demoMessages[_random.Next(_demoMessages.Length)],
             Timestamp = DateTime.UtcNow,
-            PlatformSpecific = new Dictionary<string, object>
-            {
-                { "authorChannelId", Guid.NewGuid().ToString() }
-            }
+            AuthorChannelId = Guid.NewGuid().ToString()
         };
 
         await _chatHub.BroadcastMessage(message);

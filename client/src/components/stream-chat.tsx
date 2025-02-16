@@ -4,24 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
-import { SiYoutube, SiTwitch, SiDiscord } from "react-icons/si";
+import { SiYoutube } from "react-icons/si";
 import type { ChatMessage } from "@shared/schema";
 import * as signalR from "@microsoft/signalr";
-
-const PlatformIcon = ({ platform }: { platform: ChatMessage["platform"] }) => {
-  switch (platform) {
-    case "youtube":
-      return <SiYoutube className="h-4 w-4 text-red-500" />;
-    case "twitch":
-      return <SiTwitch className="h-4 w-4 text-purple-500" />;
-    case "discord":
-      return <SiDiscord className="h-4 w-4 text-blue-500" />;
-    case "kick":
-      return <span className="h-4 w-4 text-green-500">K</span>;
-    default:
-      return null;
-  }
-};
 
 export function StreamChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -32,7 +17,7 @@ export function StreamChat() {
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5000/chathub")  // Update this URL to your C# backend
+      .withUrl("http://localhost:5000/chathub")
       .withAutomaticReconnect()
       .build();
 
@@ -58,7 +43,7 @@ export function StreamChat() {
     if (!message.trim() || !hubConnection.current) return;
 
     const chatMessage: ChatMessage = {
-      platform: "web",
+      platform: "youtube",
       username: "You",
       content: message,
       timestamp: new Date(),
@@ -75,7 +60,10 @@ export function StreamChat() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Stream Chat</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <SiYoutube className="h-5 w-5 text-red-500" />
+          YouTube Chat
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] mb-4">
@@ -83,7 +71,6 @@ export function StreamChat() {
             {messages.map((msg, index) => (
               <div key={index} className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <PlatformIcon platform={msg.platform} />
                   <span className="font-bold">{msg.username}</span>
                   <span className="text-xs text-muted-foreground">
                     {new Date(msg.timestamp).toLocaleTimeString()}
