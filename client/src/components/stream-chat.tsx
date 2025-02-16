@@ -4,16 +4,26 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send } from "lucide-react";
+import { SiYoutube, SiTwitch, SiDiscord } from "react-icons/si";
+import type { ChatMessage } from "@shared/schema";
 
-type Message = {
-  id: number;
-  username: string;
-  content: string;
-  timestamp: Date;
+const PlatformIcon = ({ platform }: { platform: ChatMessage["platform"] }) => {
+  switch (platform) {
+    case "youtube":
+      return <SiYoutube className="h-4 w-4 text-red-500" />;
+    case "twitch":
+      return <SiTwitch className="h-4 w-4 text-purple-500" />;
+    case "discord":
+      return <SiDiscord className="h-4 w-4 text-blue-500" />;
+    case "kick":
+      return <span className="h-4 w-4 text-green-500">K</span>;
+    default:
+      return null;
+  }
 };
 
 export function StreamChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
@@ -29,7 +39,7 @@ export function StreamChat() {
     };
 
     socket.onmessage = (event) => {
-      const newMessage = JSON.parse(event.data);
+      const newMessage = JSON.parse(event.data) as ChatMessage;
       setMessages((prev) => [...prev, newMessage]);
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -49,12 +59,14 @@ export function StreamChat() {
     e.preventDefault();
     if (!message.trim() || !socketRef.current) return;
 
-    socketRef.current.send(JSON.stringify({
+    const chatMessage: ChatMessage = {
+      platform: "web",
+      username: "You",
       content: message,
-      username: "User", // This would come from auth in a real app
       timestamp: new Date(),
-    }));
+    };
 
+    socketRef.current.send(JSON.stringify(chatMessage));
     setMessage("");
   };
 
@@ -66,9 +78,10 @@ export function StreamChat() {
       <CardContent>
         <ScrollArea className="h-[400px] mb-4">
           <div className="space-y-4">
-            {messages.map((msg) => (
-              <div key={msg.id} className="flex flex-col">
+            {messages.map((msg, index) => (
+              <div key={index} className="flex flex-col">
                 <div className="flex items-center gap-2">
+                  <PlatformIcon platform={msg.platform} />
                   <span className="font-bold">{msg.username}</span>
                   <span className="text-xs text-muted-foreground">
                     {new Date(msg.timestamp).toLocaleTimeString()}

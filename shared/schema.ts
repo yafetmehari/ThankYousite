@@ -17,6 +17,15 @@ export const subscribers = pgTable("subscribers", {
   subscribedAt: timestamp("subscribed_at").defaultNow(),
 });
 
+// Define the chat message schema
+export const chatMessageSchema = z.object({
+  platform: z.enum(["youtube", "twitch", "kick", "discord", "web"]),
+  username: z.string(),
+  content: z.string(),
+  timestamp: z.date(),
+  platformSpecific: z.record(z.any()).optional(),
+});
+
 export const insertEpisodeSchema = createInsertSchema(episodes).omit({ id: true });
 export const insertSubscriberSchema = createInsertSchema(subscribers).pick({ email: true });
 
@@ -24,3 +33,4 @@ export type Episode = typeof episodes.$inferSelect;
 export type InsertEpisode = z.infer<typeof insertEpisodeSchema>;
 export type Subscriber = typeof subscribers.$inferSelect;
 export type InsertSubscriber = z.infer<typeof insertSubscriberSchema>;
+export type ChatMessage = z.infer<typeof chatMessageSchema>;
