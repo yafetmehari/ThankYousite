@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { SiTwitch, SiDiscord, SiReddit, SiKick, SiYoutube } from "react-icons/si";
-import { Coins } from "lucide-react";
+import { SiDiscord, SiReddit } from "react-icons/si";
+import { Coins, CalendarDays, ShoppingCart, Users } from "lucide-react";
 
 export function SiteHeader() {
   return (
@@ -15,61 +15,36 @@ export function SiteHeader() {
               </span>
             </div>
           </Link>
+          <nav className="flex items-center space-x-4">
+            <Link href="/stream/streamer1">
+              <Button variant="ghost">Streamer 1</Button>
+            </Link>
+            <Link href="/stream/streamer2">
+              <Button variant="ghost">Streamer 2</Button>
+            </Link>
+            <Link href="/stream/streamer3">
+              <Button variant="ghost">Streamer 3</Button>
+            </Link>
+          </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <nav className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2 border-r pr-4 mr-4">
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://twitch.tv/streamer1" target="_blank" rel="noopener noreferrer">
-                  <SiTwitch className="h-5 w-5" />
-                </a>
+          <nav className="flex items-center space-x-4">
+            <Link href="/about">
+              <Button variant="ghost" size="icon">
+                <Users className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://kick.com/streamer1" target="_blank" rel="noopener noreferrer">
-                  <SiKick className="h-5 w-5" />
-                </a>
+            </Link>
+            <Link href="/schedule">
+              <Button variant="ghost" size="icon">
+                <CalendarDays className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://youtube.com/@streamer1" target="_blank" rel="noopener noreferrer">
-                  <SiYoutube className="h-5 w-5" />
-                </a>
+            </Link>
+            <Link href="/merch">
+              <Button variant="ghost" size="icon">
+                <ShoppingCart className="h-5 w-5" />
               </Button>
-            </div>
-            <div className="flex items-center space-x-2 border-r pr-4 mr-4">
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://twitch.tv/streamer2" target="_blank" rel="noopener noreferrer">
-                  <SiTwitch className="h-5 w-5" />
-                </a>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://kick.com/streamer2" target="_blank" rel="noopener noreferrer">
-                  <SiKick className="h-5 w-5" />
-                </a>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://youtube.com/@streamer2" target="_blank" rel="noopener noreferrer">
-                  <SiYoutube className="h-5 w-5" />
-                </a>
-              </Button>
-            </div>
-            <div className="flex items-center space-x-2 border-r pr-4 mr-4">
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://twitch.tv/streamer3" target="_blank" rel="noopener noreferrer">
-                  <SiTwitch className="h-5 w-5" />
-                </a>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://kick.com/streamer3" target="_blank" rel="noopener noreferrer">
-                  <SiKick className="h-5 w-5" />
-                </a>
-              </Button>
-              <Button variant="ghost" size="icon" asChild>
-                <a href="https://youtube.com/@streamer3" target="_blank" rel="noopener noreferrer">
-                  <SiYoutube className="h-5 w-5" />
-                </a>
-              </Button>
-            </div>
-            <div className="flex items-center space-x-2">
+            </Link>
+            <div className="flex items-center space-x-2 border-l pl-4 ml-4">
               <Button variant="ghost" size="icon" asChild>
                 <a href="https://discord.gg" target="_blank" rel="noopener noreferrer">
                   <SiDiscord className="h-5 w-5" />
@@ -80,7 +55,7 @@ export function SiteHeader() {
                   <SiReddit className="h-5 w-5" />
                 </a>
               </Button>
-              <Button variant="default" className="ml-4" asChild>
+              <Button variant="default" asChild>
                 <a href="#donate" className="flex items-center gap-2">
                   <Coins className="h-4 w-4" />
                   <span>Donate</span>
