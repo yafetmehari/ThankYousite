@@ -4,12 +4,18 @@ using ChatIntegration.API.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    options.MaximumReceiveMessageSize = 32 * 1024; // 32KB
+});
+
+// Configure CORS for production
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.SetIsOriginAllowed(_ => true)
+        builder.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials();
@@ -20,8 +26,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<ChatHubManager>();
 builder.Services.AddHostedService<YouTubeChatService>();
 
-// Configure Kestrel to listen on all interfaces
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+// Get port from environment variable or use default
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var app = builder.Build();
 
@@ -31,16 +38,19 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-// Important: Order matters! CORS and routing before static files
+// Important: Order matters! CORS and routing before endpoints
 app.UseCors();
 app.UseRouting();
 
-// Map SignalR hub before static files
+// Map SignalR hub
 app.MapHub<ChatHub>("/chathub");
 
+// API endpoints come after SignalR but before static files
+app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+
 // Static files and default files come after API routes
-app.UseDefaultFiles(); 
-app.UseStaticFiles(); 
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 // Fallback route comes last
 app.MapFallbackToFile("index.html");
