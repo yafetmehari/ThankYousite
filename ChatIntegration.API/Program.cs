@@ -31,13 +31,18 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
+// Important: Order matters! CORS and routing before static files
 app.UseCors();
 app.UseRouting();
-app.UseDefaultFiles(); 
-app.UseStaticFiles(); 
+
+// Map SignalR hub before static files
 app.MapHub<ChatHub>("/chathub");
 
-// Fallback to index.html for SPA routing
+// Static files and default files come after API routes
+app.UseDefaultFiles(); 
+app.UseStaticFiles(); 
+
+// Fallback route comes last
 app.MapFallbackToFile("index.html");
 
 app.Run();
